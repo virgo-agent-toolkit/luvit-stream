@@ -12,7 +12,7 @@ function ReadableState:initialize(options, stream)
   // the point at which it stops calling _read() to fill the buffer
   // Note: 0 is a valid value, means "don't call _read preemptively ever"
   --]]
-  local hwm = options.highWaterMark;
+  local hwm = options.highWaterMark
   local defaultHwm = 16
   if not options.objectMode then
     defaultHwm = 16 * 1024
@@ -20,14 +20,14 @@ function ReadableState:initialize(options, stream)
 
   self.highWaterMark = hwm or defaultHwm
 
-  self.buffer = {};
-  self.length = 0;
-  self.pipes = nil;
-  self.pipesCount = 0;
-  self.flowing = nil;
-  self.ended = false;
+  self.buffer = {}
+  self.length = 0
+  self.pipes = nil
+  self.pipesCount = 0
+  self.flowing = nil
+  self.ended = false
   self.endEmitted = false
-  self.reading = false;
+  self.reading = false
 
   --[[
   // a flag to be able to tell if the onwrite cb is called immediately,
@@ -35,24 +35,24 @@ function ReadableState:initialize(options, stream)
   // actions that shouldn't happen until "later" should generally also
   // not happen before the first write call.
   --]]
-  self.sync = true;
+  self.sync = true
 
   --[[
   // whenever we return null, then we set a flag to say
   // that we're awaiting a 'readable' event emission.
   --]]
-  self.needReadable = false;
-  self.emittedReadable = false;
-  self.readableListening = false;
+  self.needReadable = false
+  self.emittedReadable = false
+  self.readableListening = false
 
   --[[
   // object stream flag. Used to make read(n) ignore n and to
   // make all the buffer merging and length checks go away
   --]]
-  self.objectMode = not not options.objectMode;
+  self.objectMode = not not options.objectMode
 
   if core.instanceof(stream, Stream.Duplex) then
-    self.objectMode = self.objectMode or (not not options.readableObjectMode);
+    self.objectMode = self.objectMode or (not not options.readableObjectMode)
   end
 
 
@@ -67,17 +67,17 @@ function ReadableState:initialize(options, stream)
   // when piping, we only care about 'readable' events that happen
   // after read()ing all the bytes and not getting any pushback.
   --]]
-  self.ranOut = false;
+  self.ranOut = false
 
   --[[
   // the number of writers that are awaiting a drain event in .pipe()s
   --]]
-  self.awaitDrain = 0;
+  self.awaitDrain = 0
 
   --[[
   // if true, a maybeReadMore has been scheduled
   --]]
-  self.readingMore = false;
+  self.readingMore = false
 
   -- Here node.js stream handles encodings. But StringDecoder is not
   -- implemented in luvit
