@@ -277,122 +277,122 @@ function Readable:read(n)
   if n ==0 and state.needReadable and (state.length >= state.highWaterMark or state.ended) then
     debug('read: emitReadable', state.length, state.ended)
     if state.length == 0 and state.ended then
-    endReadable(self)
-  else
-    emitReadable(self)
-  end
-  return nil
-end
-
-n = howMuchToRead(n, state)
-
---[[
-// if we've ended, and we'ar now clear, then finish it up
---]]
-if n == 0 and state.ended then
-  if state.length == 0 then
-  endReadable(self)
-end
-return nil
-    end
-
-    --[[
-    // All the actual chunk generation logic needs to be
-    // *below* the call to _read.  The reason is that in certain
-    // synthetic stream cases, such as passthrough streams, _read
-    // may be a completely synchronous operation which may change
-    // the state of the read buffer, providing enough data when
-    // before there was *not* enough.
-    //
-    // So, the steps are:
-    // 1. Figure out what the state of things will be after we do
-    // a read from the buffer.
-    //
-    // 2. If that resulting state will trigger a _read, then call _read.
-    // Note that this may be asynchronous, or synchronous.  Yes, it is
-    // deeply ugly to write APIs this way, but that still doesn't mean
-    // that the Readable class should behave improperly, as streams are
-    // designed to be sync/async agnostic.
-    // Take note if the _read call is sync or async (ie, if the read call
-    // has returned yet), so that we know whether or not it's safe to emit
-    // 'readable' etc.
-    //
-    // 3. Actually pull the requested chunks out of the buffer and return.
-    --]]
-
-    --[[
-    // if we need a readable event, then we need to do some reading.
-    --]]
-    local doRead = state.needReadable
-    debug('need readable', doRead)
-
-    --[[
-    //if we currently have less than the highWaterMark, then also read some
-    --]]
-    if state.length == 0 or state.length - n < state.highWaterMark then
-      doRead = true
-      debug('length less than watermark', doRead)
-    end
-
-    --[[
-    // however, if we've ended, then there's no point, and if we're already
-    // reading, then it's unnecessary.
-    --]]
-    if state.ended or state.reading then
-      doRead = false
-      debug('reading or ended', doRead)
-    end
-
-    if doRead then
-      debug('do read')
-      state.reading = true
-      state.sync = true
-      --[[
-      // if the length is currently zero, then we *need* a readable event.
-      --]]
-      if state.length == 0 then
-        state.needReadable = true
-      end
-      --[[
-      // call internal read method
-      --]]
-      self:_read(state.highWaterMark)
-      state.sync = false
-    end
-    --[[
-    // If _read pushed data synchronously, then `reading` will be false,
-    // and we need to re-evaluate how much data we can return to the user.
-    --]]
-    if doRead and not state.reading then
-      n = howMuchToRead(nOrig, state)
-    end
-
-    local ret
-    if n > 0 then
-      ret = fromList(n, state)
+      endReadable(self)
     else
-      ret = nil
+      emitReadable(self)
     end
+    return nil
+  end
 
-    if not ret then
-      state.needReadable = true
-      n = 0
+  n = howMuchToRead(n, state)
+
+  --[[
+  // if we've ended, and we'ar now clear, then finish it up
+  --]]
+  if n == 0 and state.ended then
+    if state.length == 0 then
+      endReadable(self)
     end
+    return nil
+  end
 
-    state.length = state.length - n
+  --[[
+  // All the actual chunk generation logic needs to be
+  // *below* the call to _read.  The reason is that in certain
+  // synthetic stream cases, such as passthrough streams, _read
+  // may be a completely synchronous operation which may change
+  // the state of the read buffer, providing enough data when
+  // before there was *not* enough.
+  //
+  // So, the steps are:
+  // 1. Figure out what the state of things will be after we do
+  // a read from the buffer.
+  //
+  // 2. If that resulting state will trigger a _read, then call _read.
+  // Note that this may be asynchronous, or synchronous.  Yes, it is
+  // deeply ugly to write APIs this way, but that still doesn't mean
+  // that the Readable class should behave improperly, as streams are
+  // designed to be sync/async agnostic.
+  // Take note if the _read call is sync or async (ie, if the read call
+  // has returned yet), so that we know whether or not it's safe to emit
+  // 'readable' etc.
+  //
+  // 3. Actually pull the requested chunks out of the buffer and return.
+  --]]
 
+  --[[
+  // if we need a readable event, then we need to do some reading.
+  --]]
+  local doRead = state.needReadable
+  debug('need readable', doRead)
+
+  --[[
+  //if we currently have less than the highWaterMark, then also read some
+  --]]
+  if state.length == 0 or state.length - n < state.highWaterMark then
+    doRead = true
+    debug('length less than watermark', doRead)
+  end
+
+  --[[
+  // however, if we've ended, then there's no point, and if we're already
+  // reading, then it's unnecessary.
+  --]]
+  if state.ended or state.reading then
+    doRead = false
+    debug('reading or ended', doRead)
+  end
+
+  if doRead then
+    debug('do read')
+    state.reading = true
+    state.sync = true
     --[[
-    // If we have nothing in the buffer, then we want to know
-    // as soon as we *do* get something into the buffer.
+    // if the length is currently zero, then we *need* a readable event.
     --]]
-    if state.length == 0 and not state.ended then
+    if state.length == 0 then
       state.needReadable = true
     end
-
     --[[
-    // If we tried to read() past the EOF, then emit end on the next tick.
+    // call internal read method
     --]]
-    if nOrig ~= n and state.ended and state.length == 0 then
+    self:_read(state.highWaterMark)
+    state.sync = false
+  end
+  --[[
+  // If _read pushed data synchronously, then `reading` will be false,
+  // and we need to re-evaluate how much data we can return to the user.
+  --]]
+  if doRead and not state.reading then
+    n = howMuchToRead(nOrig, state)
+  end
+
+  local ret
+  if n > 0 then
+    ret = fromList(n, state)
+  else
+    ret = nil
+  end
+
+  if not ret then
+    state.needReadable = true
+    n = 0
+  end
+
+  state.length = state.length - n
+
+  --[[
+  // If we have nothing in the buffer, then we want to know
+  // as soon as we *do* get something into the buffer.
+  --]]
+  if state.length == 0 and not state.ended then
+    state.needReadable = true
+  end
+
+  --[[
+  // If we tried to read() past the EOF, then emit end on the next tick.
+  --]]
+  if nOrig ~= n and state.ended and state.length == 0 then
     endReadable(self)
   end
 
