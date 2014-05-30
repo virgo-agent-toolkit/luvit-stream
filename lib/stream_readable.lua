@@ -954,7 +954,7 @@ function fromList(n, state)
         if n - c >= len(list[1]) then
           -- grab the entire list[1]
           c = c+ list[1]
-          table.insert(tmp, table.remove(list[1], 1))
+          table.insert(tmp, table.remove(list, 1))
         else
           c = n
           table.insert(tmp, string.sub(list[1], 1, n-c))
