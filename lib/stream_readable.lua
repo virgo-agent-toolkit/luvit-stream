@@ -2,6 +2,7 @@ local core = require('core')
 local utils = require('utils')
 local Stream = require('./stream').Stream
 local table = require('table')
+local string = require('string')
 
 local ReadableState = core.Object:extend()
 
@@ -168,7 +169,7 @@ function readableAddChunk(stream, state, chunk, encoding, addToFront)
           emitReadable(stream)
         end
       end
-      mabeReadMore(stream, state)
+      maybeReadMore(stream, state)
     end
   elseif not addToFront then
     state.reading = false
@@ -265,7 +266,7 @@ function Readable:read(n)
   local state = self._readableState
   local nOrig = n
 
-  if n ~= n or n > 0 then
+  if type(n) ~= 'number' or n > 0 then
     state.emittedReadable = false
   end
 
@@ -512,9 +513,14 @@ function Readable:pipe(dest, pipeOpts)
   local doEnd = (not pipeOpts or pipeOpts._end ~= false) and dest ~=
   process.stdout and dest ~= process.stderr
 
-  local _endFn = cleanup
+  -- onend/cleanup are wrapped in another function because the way lua
+  -- handles function declaration is different from JavaScript. (Otherwise
+  -- onend/cleanup are nil here)
+  local _endFn
   if doEnd then
-    _endFn = onend
+    _endFn = function(...) onend(...) end
+  else
+    _endFn = function(...) cleanup(...) end
   end
 
   if state.endEmitted then
@@ -523,13 +529,13 @@ function Readable:pipe(dest, pipeOpts)
     src:once('end', _endFn)
   end
 
-  dest:on('unpipe', onunpipe)
   function onunpipe(readable)
     debug('onunpipe')
     if readable == src then
       cleanup()
     end
   end
+  dest:on('unpipe', onunpipe)
 
   function onend()
     debug('onend')
@@ -550,14 +556,14 @@ function Readable:pipe(dest, pipeOpts)
     --[[
     // cleanup event handlers once the pipe is broken
     --]]
-    dest:removeListener('close', onclose)
-    dest:removeListener('finish', onfinish)
+    dest:removeListener('close', function(...) onclose(...) end)
+    dest:removeListener('finish', function(...) onfinish(...) end)
     dest:removeListener('drain', ondrain)
-    dest:removeListener('error', onerror)
+    dest:removeListener('error', function(...) onerror(...) end)
     dest:removeListener('unpipe', onunpipe)
     src:removeListener('end', onend)
     src:removeListener('end', cleanup)
-    src:removeListener('data', ondata)
+    src:removeListener('data', function(...) ondata(...) end)
 
     --[[
     // if the reader is waiting for a drain event from this
@@ -572,7 +578,6 @@ function Readable:pipe(dest, pipeOpts)
     end
   end
 
-  src:on('data', ondata)
   function ondata(chunk)
     debug('ondata')
     local ret = dest:write(chunk)
@@ -583,6 +588,7 @@ function Readable:pipe(dest, pipeOpts)
       src:pause()
     end
   end
+  src:on('data', ondata)
 
   --[[
   // if the dest has an error, then stop piping into it.
@@ -613,7 +619,7 @@ function Readable:pipe(dest, pipeOpts)
   // Both close and finish should trigger unpipe, but only once.
   --]]
   function onclose()
-    dest:removeListener('finish', onfinish)
+    dest:removeListener('finish', function(...) onfinish(...) end)
     unpipe()
   end
   dest:once('close', onclose)
@@ -741,7 +747,7 @@ end
 // Ensure readable listeners eventually get something
 --]]
 function Readable:on(ev, fn)
-  local res = Stream.prototype.on.call(self, ev, fn)
+  local res = Stream.on(self, ev, fn)
 
   --[[
   // If listening to data, and it has not explicitly been paused,
@@ -802,7 +808,7 @@ end
 
 function resume_(stream, state)
   state.resumeScheduled = false
-  stream.emit('resume')
+  stream:emit('resume')
   flow(stream)
   if state.flowing and not state.reading then
     stream:read(0)
