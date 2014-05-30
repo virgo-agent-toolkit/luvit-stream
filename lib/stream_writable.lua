@@ -2,6 +2,7 @@ local core = require('core')
 local utils = require('utils')
 local Stream = require('./stream').Stream
 local table = require('table')
+local string = require('string')
 
 
 local WriteReq = core.Object:extend()
@@ -281,7 +282,7 @@ function writeOrBuffer(stream, state, chunk, encoding, cb)
   if state.objectMode then
     len = 1
   else
-    len = chunk.length
+    len = string.len(chunk)
   end
 
   state.length = state.length + len
@@ -294,7 +295,7 @@ function writeOrBuffer(stream, state, chunk, encoding, cb)
     state.needDrain = true
   end
 
-  if state.writing or state.corked then
+  if state.writing or state.corked ~= 0 then
     table.insert(state.buffer, WriteReq:new(chunk, encoding, cb))
   else
     doWrite(stream, state, false, len, chunk, encoding, cb)
