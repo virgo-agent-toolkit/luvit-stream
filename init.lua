@@ -3,6 +3,7 @@ local stream_readable = require('./lib/stream_readable')
 local stream_writable = require('./lib/stream_writable')
 local stream_duplex = require('./lib/stream_duplex')
 local stream_transform = require('./lib/stream_transform')
+local stream_passthrough = require('./lib/stream_passthrough')
 
 local exports = {}
 
@@ -23,6 +24,10 @@ for k,v in pairs(stream_duplex) do
 end
 
 for k,v in pairs(stream_transform) do
+  exports[k] = v
+end
+
+for k,v in pairs(stream_passthrough) do
   exports[k] = v
 end
 
