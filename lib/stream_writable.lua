@@ -157,6 +157,10 @@ function Writable:initialize(options)
   --]]
 
   self._writableState = WritableState:new(options, self)
+
+  if type(Stream.initialize) == 'function' then
+    Stream.initialize(self)
+  end
 end
 
 --[[

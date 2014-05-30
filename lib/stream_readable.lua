@@ -99,6 +99,9 @@ end
 
 function Readable:initialize(options)
   self._readableState = ReadableState:new(options, self)
+  if type(Stream.initialize) == 'function' then
+    Stream.initialize(self)
+  end
 end
 
 --[[

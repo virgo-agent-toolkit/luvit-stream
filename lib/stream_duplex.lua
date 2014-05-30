@@ -16,6 +16,7 @@ function Duplex:initialize(options)
     return new Duplex(options);
   --]]
 
+  Readable.initialize(self, options)
   Writable.initialize(self, options)
 
   if options and options.readable == false then
@@ -31,7 +32,7 @@ function Duplex:initialize(options)
     self.allowHalfOpen = false
   end
 
-  self.once('end', onend)
+  self:once('end', onend)
 end
 
 --[[
