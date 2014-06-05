@@ -499,71 +499,36 @@ end
 function Readable:pipe(dest, pipeOpts)
   local src = self
   local state = self._readableState
+  local doEnd, _endFn, ondrain
 
-  if state.pipesCount == 0 then
-    state.pipes = dest
-  elseif state.pipesCount == 1 then
-    state.pipes = {state.pipes, dest}
-  else
-    table.insert(state.pipes, dest)
-  end
-  state.pipesCount = state.pipesCount + 1
-  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts)
+  -- local functions
+  local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe
 
-  local doEnd = (not pipeOpts or pipeOpts._end ~= false) and dest ~=
-  process.stdout and dest ~= process.stderr
-
-  -- onend/cleanup are wrapped in another function because the way lua
-  -- handles function declaration is different from JavaScript. (Otherwise
-  -- onend/cleanup are nil here)
-  local _endFn
-  if doEnd then
-    _endFn = function(...) onend(...) end
-  else
-    _endFn = function(...) cleanup(...) end
-  end
-
-  if state.endEmitted then
-    process.nextTick(_endFn)
-  else
-    src:once('end', _endFn)
-  end
-
-  function onunpipe(readable)
+  onunpipe = function(readable)
     debug('onunpipe')
     if readable == src then
       cleanup()
     end
   end
-  dest:on('unpipe', onunpipe)
 
-  function onend()
+  onend = function ()
     debug('onend')
     dest:_end()
   end
 
-  --[[
-  // when the dest drains, it reduces the awaitDrain counter
-  // on the source.  This would be more elegant with a .once()
-  // handler in flow(), but adding and removing repeatedly is
-  // too slow.
-  --]]
-  local ondrain = pipeOnDrain(src)
-  dest:on('drain', ondrain)
-
-  function cleanup()
+  local cleanup = function()
     debug('cleanup')
     --[[
     // cleanup event handlers once the pipe is broken
     --]]
-    dest:removeListener('close', function(...) onclose(...) end)
-    dest:removeListener('finish', function(...) onfinish(...) end)
+    dest:removeListener('close', onclose)
+    dest:removeListener('finish', onfinish)
     dest:removeListener('drain', ondrain)
-    dest:removeListener('error', function(...) onerror(...) end)
+    dest:removeListener('error', onerror)
     dest:removeListener('unpipe', onunpipe)
     src:removeListener('end', onend)
     src:removeListener('end', cleanup)
-    src:removeListener('data', function(...) ondata(...) end)
+    src:removeListener('data', ondata)
 
     --[[
     // if the reader is waiting for a drain event from this
@@ -578,7 +543,7 @@ function Readable:pipe(dest, pipeOpts)
     end
   end
 
-  function ondata(chunk)
+  local ondata = function(chunk)
     debug('ondata')
     local ret = dest:write(chunk)
     if false == ret then
@@ -588,13 +553,12 @@ function Readable:pipe(dest, pipeOpts)
       src:pause()
     end
   end
-  src:on('data', ondata)
 
   --[[
   // if the dest has an error, then stop piping into it.
   // however, don't suppress the throwing behavior for this.
   --]]
-  function onerror(er)
+  local onerror = function(er)
     debug('onerror', er)
     unpipe()
     dest:removeListener('error', onerror)
@@ -602,6 +566,65 @@ function Readable:pipe(dest, pipeOpts)
       dest:emit('error', er)
     end
   end
+
+  --[[
+  // Both close and finish should trigger unpipe, but only once.
+  --]]
+  local onclose = function()
+    dest:removeListener('finish', onfinish)
+    unpipe()
+  end
+
+  local onfinish = function()
+    debug('onfinish')
+    dest:removeListener('close', onclose)
+    unpipe()
+  end
+
+  local unpipe = function()
+    debug('unpipe')
+    src:unpipe(dest)
+  end
+
+
+
+  if state.pipesCount == 0 then
+    state.pipes = dest
+  elseif state.pipesCount == 1 then
+    state.pipes = {state.pipes, dest}
+  else
+    table.insert(state.pipes, dest)
+  end
+  state.pipesCount = state.pipesCount + 1
+  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts)
+
+  local doEnd = (not pipeOpts or pipeOpts._end ~= false) and dest ~=
+  process.stdout and dest ~= process.stderr
+
+  if doEnd then
+    _endFn = onend
+  else
+    _endFn = cleanup
+  end
+
+  if state.endEmitted then
+    process.nextTick(_endFn)
+  else
+    src:once('end', _endFn)
+  end
+
+  dest:on('unpipe', onunpipe)
+
+  --[[
+  // when the dest drains, it reduces the awaitDrain counter
+  // on the source.  This would be more elegant with a .once()
+  // handler in flow(), but adding and removing repeatedly is
+  // too slow.
+  --]]
+  local ondrain = pipeOnDrain(src)
+  dest:on('drain', ondrain)
+
+  src:on('data', ondata)
 
   --[[
   // This is a brutally ugly hack to make sure that our error handler
@@ -614,26 +637,8 @@ function Readable:pipe(dest, pipeOpts)
   dest._events.error = [onerror, dest._events.error];
   --]]
 
-
-  --[[
-  // Both close and finish should trigger unpipe, but only once.
-  --]]
-  function onclose()
-    dest:removeListener('finish', function(...) onfinish(...) end)
-    unpipe()
-  end
   dest:once('close', onclose)
-  function onfinish()
-    debug('onfinish')
-    dest:removeListener('close', onclose)
-    unpipe()
-  end
   dest:once('finish', onfinish)
-
-  function unpipe()
-    debug('unpipe')
-    src:unpipe(dest)
-  end
 
   --[[
   // tell the dest that it's being piped to
