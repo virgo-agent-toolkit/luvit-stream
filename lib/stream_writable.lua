@@ -249,7 +249,7 @@ function Writable:uncork()
         state.corked == 0 and
         not state.finished and
         not state.bufferProcessing and
-        state.buffer.length ~= 0 then
+        table.getn(state.buffer) ~= 0 then
       clearBuffer(self, state)
     end
   end
@@ -357,7 +357,7 @@ function onwrite(stream, er)
     if not finished and
         not state.corked and
         not state.bufferProcessing and
-        state.buffer.length ~= 0 then
+        table.getn(state.buffer) ~= 0 then
       clearBuffer(stream, state)
     end
 
@@ -399,12 +399,12 @@ end
 function clearBuffer(stream, state)
   state.bufferProcessing = true
 
-  if stream._writev and state.buffer.length > 1 then
+  if stream._writev and table.getn(state.buffer) > 1 then
     --[[
     // Fast case, write everything using _writev()
     --]]
     local cbs = {}
-    for c = 1,state.buffer.length,1 do
+    for c = 1,table.getn(state.buffer) do
       table.insert(cbs, state.buffer[c].callback)
     end
 
@@ -414,7 +414,7 @@ function clearBuffer(stream, state)
     --]]
     state.pendingcb = state.pendingcb + 1
     doWrite(stream, state, true, state.length, state.buffer, '', function(err)
-      for i = 1,cbs.length,1 do
+      for i = 1,table.getn(cbs) do
         state.pendingcb = state.pendingcb - 1
         cbs[i](err)
       end
@@ -429,7 +429,7 @@ function clearBuffer(stream, state)
     // Slow case, write chunks one-by-one
     --]]
     local c = 1
-    while c <= state.buffer.length do
+    while c <= table.getn(state.buffer) do
       local entry = state.buffer[c]
       local chunk = entry.chunk
       -- var encoding = entry.encoding
@@ -438,7 +438,7 @@ function clearBuffer(stream, state)
       if state.objectMode then
         len = 1
       else
-        len =chunk.length
+        len =string.len(chunk.length)
       end
 
       doWrite(stream, state, false, len, chunk, encoding, cb)
@@ -456,15 +456,15 @@ function clearBuffer(stream, state)
       c = c + 1
     end
 
-    if c < state.buffer.length then
+    if c < table.getn(state.buffer) then
       -- node.js: state.buffer = state.buffer.slice(c)
       old = state.buffer
       state.buffer = {}
-      for i=c,state.buffer.length,1 do
+      for i=c,table.getn(state.buffer),1 do
         state.buffer[i-c+1]=old[c]
       end
     else
-      state.buffer.length = 0
+      table.setn(state.buffer, 0)
     end
   end
 
@@ -507,7 +507,7 @@ end
 
 
 function needFinish(stream, state)
-  return state.ending and state.length == 0 and state.buffer.length == 0 and
+  return state.ending and state.length == 0 and table.getn(state.buffer) == 0 and
   not state.finished and not state.writing
 end
 

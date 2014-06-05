@@ -196,7 +196,7 @@ function done(stream, er)
   local ws = stream._writableState
   local ts = stream._transformState
 
-  if ws.length then
+  if ws.length ~= 0 then
     error('calling transform done when ws.length != 0')
   end
 

@@ -516,7 +516,7 @@ function Readable:pipe(dest, pipeOpts)
     dest:_end()
   end
 
-  local cleanup = function()
+  cleanup = function()
     debug('cleanup')
     --[[
     // cleanup event handlers once the pipe is broken
@@ -543,7 +543,7 @@ function Readable:pipe(dest, pipeOpts)
     end
   end
 
-  local ondata = function(chunk)
+  ondata = function(chunk)
     debug('ondata')
     local ret = dest:write(chunk)
     if false == ret then
@@ -558,7 +558,7 @@ function Readable:pipe(dest, pipeOpts)
   // if the dest has an error, then stop piping into it.
   // however, don't suppress the throwing behavior for this.
   --]]
-  local onerror = function(er)
+  onerror = function(er)
     debug('onerror', er)
     unpipe()
     dest:removeListener('error', onerror)
@@ -570,18 +570,18 @@ function Readable:pipe(dest, pipeOpts)
   --[[
   // Both close and finish should trigger unpipe, but only once.
   --]]
-  local onclose = function()
+  onclose = function()
     dest:removeListener('finish', onfinish)
     unpipe()
   end
 
-  local onfinish = function()
+  onfinish = function()
     debug('onfinish')
     dest:removeListener('close', onclose)
     unpipe()
   end
 
-  local unpipe = function()
+  unpipe = function()
     debug('unpipe')
     src:unpipe(dest)
   end

@@ -32,13 +32,13 @@ function Duplex:initialize(options)
     self.allowHalfOpen = false
   end
 
-  self:once('end', onend)
+  self:once('end', utils.bind(onend, self))
 end
 
 --[[
 // the no-half-open enforcer
 --]]
-function onend()
+function onend(self)
   --[[
   // if we allow half-open state, or if the writable side ended,
   // then we're ok.
