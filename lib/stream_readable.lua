@@ -502,7 +502,7 @@ function Readable:pipe(dest, pipeOpts)
   local doEnd, _endFn, ondrain
 
   -- local functions
-  local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe
+  local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe, ondrain
 
   onunpipe = function(readable)
     debug('onunpipe')
@@ -621,7 +621,7 @@ function Readable:pipe(dest, pipeOpts)
   // handler in flow(), but adding and removing repeatedly is
   // too slow.
   --]]
-  local ondrain = pipeOnDrain(src)
+  ondrain = pipeOnDrain(src)
   dest:on('drain', ondrain)
 
   src:on('data', ondata)
