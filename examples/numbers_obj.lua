@@ -36,17 +36,18 @@ function numberIncreaser:_transform(data, encoding, callback)
 end
 
 
-local stdoutWriter = stream.Writable:extend()
+local stringify = stream.Transform:extend()
 
-function stdoutWriter:initialize(options)
+function stringify:initialize(options)
   local opt = options or {}
   opt.objectMode = true
-  stream.Writable.initialize(self, opt)
+  stream.Transform.initialize(self, opt)
 end
 
-function stdoutWriter:_write(data, encoding, callback)
-  print(data.num)
-  callback()
+function stringify:_transform(data, encoding, callback)
+  if data and data.num then
+    callback(nil, tostring(data.num))
+  end
 end
 
-numberReader:new(9):pipe(numberIncreaser:new()):pipe(stdoutWriter:new())
+numberReader:new(9):pipe(numberIncreaser:new()):pipe(stringify:new()):pipe(process.stdout)

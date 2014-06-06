@@ -35,24 +35,24 @@ function numberIncreaser:_transform(data, encoding, callback)
   callback(nil, {num = data.num + 1})
 end
 
+local stringify = stream.Transform:extend()
 
-local stdoutWriter = stream.Writable:extend()
-
-function stdoutWriter:initialize(options)
+function stringify:initialize(options)
   local opt = options or {}
   opt.objectMode = true
-  stream.Writable.initialize(self, opt)
+  stream.Transform.initialize(self, opt)
 end
 
-function stdoutWriter:_write(data, encoding, callback)
-  print(data.num)
-  callback()
+function stringify:_transform(data, encoding, callback)
+  if data and data.num then
+    callback(nil, tostring(data.num))
+  end
 end
 
 local observer = stream.Observable:new({objectMode = true})
 
 local outsider = observer:observe()
 
-numberReader:new(9):pipe(observer):pipe(numberIncreaser:new()):pipe(stdoutWriter:new())
+numberReader:new(9):pipe(observer):pipe(numberIncreaser:new()):pipe(stringify:new()):pipe(process.stdout)
 
-outsider:pipe(stdoutWriter:new())
+outsider:pipe(stringify:new()):pipe(process.stdout)
