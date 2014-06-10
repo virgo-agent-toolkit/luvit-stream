@@ -242,7 +242,7 @@ end
 function Writable:uncork()
   local state = self._writableState
 
-  if state.corked then
+  if state.corked ~= 0 then
     state.corked = state.corked - 1
 
     if not state.writing and
@@ -355,7 +355,7 @@ function onwrite(stream, er)
     local finished = needFinish(stream, state)
 
     if not finished and
-        not state.corked and
+        state.corked == 0 and
         not state.bufferProcessing and
         table.getn(state.buffer) ~= 0 then
       clearBuffer(stream, state)
@@ -464,7 +464,7 @@ function clearBuffer(stream, state)
         state.buffer[i-c+1]=old[c]
       end
     else
-      table.setn(state.buffer, 0)
+      state.buffer = {}
     end
   end
 
