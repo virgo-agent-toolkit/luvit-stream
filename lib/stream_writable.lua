@@ -4,7 +4,6 @@ local Stream = require('./stream').Stream
 local table = require('table')
 local string = require('string')
 
-
 local WriteReq = core.Object:extend()
 
 function WriteReq:initialize(chunk, encoding, cb)
@@ -39,7 +38,7 @@ function WritableState:initialize(options, stream)
   --]]
   self.objectMode = not not options.objectMode
 
-  if core.instanceof(stream, Stream.Duplex) then
+  if core.instanceof(stream, require('./stream_duplex').Duplex) then
     self.objectMode = self.objectMode or not not options.writableObjectMode
   end
 
