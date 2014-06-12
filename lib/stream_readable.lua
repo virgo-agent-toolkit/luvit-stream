@@ -873,7 +873,7 @@ function Readable:wrap(stream)
   // proxy all the other methods.
   // important when wrapping filters and duplexes.
   --]]
-  for i in stream do
+  for i in pairs(stream) do
     if ('function' == type(stream[i]) and not self[i]) then
       function _proxyMethods(method)
         return function()
@@ -888,9 +888,9 @@ function Readable:wrap(stream)
   // proxy certain important events.
   --]]
   local events = {'error', 'close', 'destroy', 'pause', 'resume'}
-  events.forEach(function(ev)
-    stream:on(ev, utils.bind(self.emit, self, ev))
-  end)
+  for k,v in pairs(events) do
+    stream:on(v, utils.bind(self.emit, self, ev))
+  end
 
   --[[
   // when we try to consume some more bytes, simply unpause the
