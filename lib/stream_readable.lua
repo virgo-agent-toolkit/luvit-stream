@@ -375,7 +375,7 @@ function Readable:read(n)
     ret = nil
   end
 
-  if not ret then
+  if ret == nil then
     state.needReadable = true
     n = 0
   end
