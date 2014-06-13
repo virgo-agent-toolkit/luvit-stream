@@ -437,7 +437,7 @@ function clearBuffer(stream, state)
       if state.objectMode then
         len = 1
       else
-        len =string.len(chunk.length)
+        len =string.len(chunk)
       end
 
       doWrite(stream, state, false, len, chunk, encoding, cb)

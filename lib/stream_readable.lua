@@ -397,7 +397,7 @@ function Readable:read(n)
     endReadable(self)
   end
 
-  if ret then
+  if ret ~= nil then
     self:emit('data', ret)
   end
 
