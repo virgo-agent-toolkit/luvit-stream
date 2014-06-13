@@ -130,7 +130,7 @@ function readableAddChunk(stream, state, chunk, encoding, addToFront)
   local er = chunkInvalid(state, chunk)
   if er then
     stream:emit('error', er)
-  elseif not chunk then
+  elseif chunk == nil then
     state.reading = false
     if not state.ended then
       onEofChunk(stream, state)
@@ -858,7 +858,7 @@ function Readable:wrap(stream)
 
   stream:on('data', function(chunk)
     debug('wrapped data')
-    if not chunk or not state.objectMode and len(notchunk) > 0 then
+    if chunk == nil or not state.objectMode and len(chunk) == 0 then
       return
     end
 
