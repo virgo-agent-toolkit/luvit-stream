@@ -191,7 +191,7 @@ end
 --]]
 function validChunk(stream, state, chunk, cb)
   local valid = true
-  if chunk and type(chunk) ~= 'string' and not state.objectMode then
+  if chunk ~= nil and type(chunk) ~= 'string' and not state.objectMode then
     local er = core.Error:new('Invalid non-string/buffer chunk')
     stream:emit('error', er)
     process.nextTick(function()
@@ -455,12 +455,10 @@ function clearBuffer(stream, state)
       c = c + 1
     end
 
-    if c < table.getn(state.buffer) then
+    if c <= table.getn(state.buffer) then
       -- node.js: state.buffer = state.buffer.slice(c)
-      old = state.buffer
-      state.buffer = {}
-      for i=c,table.getn(state.buffer),1 do
-        state.buffer[i-c+1]=old[c]
+      for i=1,c-1 do
+        table.remove(state.buffer, 1)
       end
     else
       state.buffer = {}
@@ -482,9 +480,12 @@ function Writable:_end(chunk, encoding, cb)
   if type(chunk) == 'function' then
     cb = chunk
     chunk = nil
+  elseif type(encoding) == 'function' then
+    cb = encoding
+    encoding = nil
   end
 
-  if chunk then
+  if chunk ~= nil then
     self:write(chunk, encoding)
   end
 
