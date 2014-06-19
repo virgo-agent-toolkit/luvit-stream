@@ -502,7 +502,7 @@ function Readable:pipe(dest, pipeOpts)
   local doEnd, _endFn, ondrain
 
   -- local functions
-  local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe, ondrain
+  local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe
 
   onunpipe = function(readable)
     debug('onunpipe')
@@ -660,10 +660,10 @@ function pipeOnDrain(src)
   return function()
     local state = src._readableState
     debug('pipeOnDrain', state.awaitDrain)
-    if (state.awaitDrain) then
-      state.awaitDrain = state.awaitDrain + 1
+    if state.awaitDrain ~= 0 then
+      state.awaitDrain = state.awaitDrain - 1
     end
-    if state.awaitDrain == 0 and core.Emitter.listenerCount(src, 'data') then
+    if state.awaitDrain == 0 and core.Emitter.listenerCount(src, 'data') ~= 0 then
       state.flowing = true
       flow(src)
     end
