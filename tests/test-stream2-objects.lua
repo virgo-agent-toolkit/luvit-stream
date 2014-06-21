@@ -1,7 +1,7 @@
 local table = require('table')
 local Readable = require('..').Readable
 local Writable = require('..').Writable
-local test = require('./modules/tape')('test-stream2-objects')
+local test = require('tape')('test-stream2-objects')
 
 function noop() end
 
