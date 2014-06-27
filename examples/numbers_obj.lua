@@ -2,9 +2,9 @@ local stream = require('..')
 local fs = require('fs')
 local core = require('core')
 
-local numberReader = stream.Readable:extend()
+local Numbers = stream.Readable:extend()
 
-function numberReader:initialize(count, options)
+function Numbers:initialize(count, options)
   local opt = options or {}
   opt.objectMode = true
   stream.Readable.initialize(self, opt)
@@ -12,7 +12,7 @@ function numberReader:initialize(count, options)
   self.count = count
 end
 
-function numberReader:_read()
+function Numbers:_read()
   if self.current > self.count then
     self:push(nil)
     return
@@ -23,31 +23,31 @@ function numberReader:_read()
 end
 
 
-local numberIncreaser = stream.Transform:extend()
+local NumberIncreaser = stream.Transform:extend()
 
-function numberIncreaser:initialize(options)
+function NumberIncreaser:initialize(options)
   local opt = options or {}
   opt.objectMode = true
   stream.Transform.initialize(self, opt)
 end
 
-function numberIncreaser:_transform(data, encoding, callback)
+function NumberIncreaser:_transform(data, encoding, callback)
   callback(nil, {num = data.num + 1})
 end
 
 
-local stringify = stream.Transform:extend()
+local Stringify = stream.Transform:extend()
 
-function stringify:initialize(options)
+function Stringify:initialize(options)
   local opt = options or {}
   opt.objectMode = true
   stream.Transform.initialize(self, opt)
 end
 
-function stringify:_transform(data, encoding, callback)
+function Stringify:_transform(data, encoding, callback)
   if data and data.num then
     callback(nil, tostring(data.num))
   end
 end
 
-numberReader:new(9):pipe(numberIncreaser:new()):pipe(stringify:new()):pipe(process.stdout)
+Numbers:new(9):pipe(NumberIncreaser:new()):pipe(Stringify:new()):pipe(process.stdout)
