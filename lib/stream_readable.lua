@@ -262,7 +262,6 @@ function howMuchToRead(n, state)
 end
 
 function Readable:read(n)
-  debug('read', n)
   local state = self._readableState
   local nOrig = n
 
@@ -276,7 +275,6 @@ function Readable:read(n)
   // the 'readable' event and move on.
   --]]
   if n ==0 and state.needReadable and (state.length >= state.highWaterMark or state.ended) then
-    debug('read: emitReadable', state.length, state.ended)
     if state.length == 0 and state.ended then
       endReadable(self)
     else
@@ -325,14 +323,12 @@ function Readable:read(n)
   // if we need a readable event, then we need to do some reading.
   --]]
   local doRead = state.needReadable
-  debug('need readable', doRead)
 
   --[[
   //if we currently have less than the highWaterMark, then also read some
   --]]
   if state.length == 0 or state.length - n < state.highWaterMark then
     doRead = true
-    debug('length less than watermark', doRead)
   end
 
   --[[
@@ -341,11 +337,9 @@ function Readable:read(n)
   --]]
   if state.ended or state.reading then
     doRead = false
-    debug('reading or ended', doRead)
   end
 
   if doRead then
-    debug('do read')
     state.reading = true
     state.sync = true
     --[[
@@ -432,7 +426,6 @@ function emitReadable(stream)
   local state = stream._readableState
   state.needReadable = false
   if not state.emittedReadable then
-    debug('emitReadable', state.flowing)
     state.emittedReadable = true
     if state.sync then
       process.nextTick(function()
@@ -445,7 +438,6 @@ function emitReadable(stream)
 end
 
 function emitReadable_(stream)
-  debug('emit readable')
   stream:emit('readable')
   flow(stream)
 end
@@ -472,7 +464,6 @@ function maybeReadMore_(stream, state)
   local len = state.length
   while not state.reading and not state.flowing and not state.ended and
     state.length < state.highWaterMark do
-    debug('maybeReadMore read 0')
     stream:read(0)
     if len == state.length then
       --[[
@@ -505,19 +496,16 @@ function Readable:pipe(dest, pipeOpts)
   local onunpipe, onend, cleanup, ondata, onerror, onclose, onfinish, unpipe
 
   onunpipe = function(readable)
-    debug('onunpipe')
     if readable == src then
       cleanup()
     end
   end
 
   onend = function ()
-    debug('onend')
     dest:_end()
   end
 
   cleanup = function()
-    debug('cleanup')
     --[[
     // cleanup event handlers once the pipe is broken
     --]]
@@ -544,11 +532,8 @@ function Readable:pipe(dest, pipeOpts)
   end
 
   ondata = function(chunk)
-    debug('ondata')
     local ret = dest:write(chunk)
     if false == ret then
-      debug('false write response, pause',
-      src._readableState.awaitDrain)
       src._readableState.awaitDrain = src._readableState.awaitDrain + 1
       src:pause()
     end
@@ -559,7 +544,6 @@ function Readable:pipe(dest, pipeOpts)
   // however, don't suppress the throwing behavior for this.
   --]]
   onerror = function(er)
-    debug('onerror', er)
     unpipe()
     dest:removeListener('error', onerror)
     if core.Emitter.listenerCount(dest, 'error') == 0 then
@@ -576,13 +560,11 @@ function Readable:pipe(dest, pipeOpts)
   end
 
   onfinish = function()
-    debug('onfinish')
     dest:removeListener('close', onclose)
     unpipe()
   end
 
   unpipe = function()
-    debug('unpipe')
     src:unpipe(dest)
   end
 
@@ -596,7 +578,6 @@ function Readable:pipe(dest, pipeOpts)
     table.insert(state.pipes, dest)
   end
   state.pipesCount = state.pipesCount + 1
-  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts)
 
   local doEnd = (not pipeOpts or pipeOpts._end ~= false) and dest ~=
   process.stdout and dest ~= process.stderr
@@ -649,7 +630,6 @@ function Readable:pipe(dest, pipeOpts)
   // start the flow if it hasn't been started already.
   --]]
   if not state.flowing then
-    debug('pipe resume')
     src:resume()
   end
 
@@ -659,7 +639,6 @@ end
 function pipeOnDrain(src)
   return function()
     local state = src._readableState
-    debug('pipeOnDrain', state.awaitDrain)
     if state.awaitDrain ~= 0 then
       state.awaitDrain = state.awaitDrain - 1
     end
@@ -771,7 +750,6 @@ function Readable:on(ev, fn)
       if not state.reading then
         local _self = self
         process.nextTick(function()
-          debug('readable nexttick read 0')
           _self:read(0)
         end)
       elseif state.length then
@@ -791,10 +769,8 @@ Readable.addListener = Readable.on
 function Readable:resume()
   local state = self._readableState
   if not state.flowing then
-    debug('resume')
     state.flowing = true
     if not state.reading then
-      debug('resume read 0')
       self:read(0)
     end
     resume(self, state)
@@ -821,9 +797,7 @@ function resume_(stream, state)
 end
 
 function Readable:pause()
-  debug('call pause flowing=%j', self._readableState.flowing)
   if false ~= self._readableState.flowing then
-    debug('pause')
     self._readableState.flowing = false
     self:emit('pause')
   end
@@ -832,7 +806,6 @@ end
 
 function flow(stream)
   local state = stream._readableState
-  debug('flow', state.flowing)
   if state.flowing then
     local chunk = stream:read()
     while nil ~= chunk and state.flowing do
@@ -852,12 +825,10 @@ function Readable:wrap(stream)
 
   local _self = self
   stream:on('end', function() 
-    debug('wrapped end')
     _self:push(nil)
   end)
 
   stream:on('data', function(chunk)
-    debug('wrapped data')
     if chunk == nil or not state.objectMode and len(chunk) == 0 then
       return
     end
@@ -897,7 +868,6 @@ function Readable:wrap(stream)
   // underlying stream.
   --]]
   self._read = function(n)
-    debug('wrapped _read', n)
     if paused then
       paused = false
       stream:resume()
