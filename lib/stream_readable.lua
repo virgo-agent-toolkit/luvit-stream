@@ -823,9 +823,8 @@ function Readable:wrap(stream)
   local state = self._readableState
   local paused = false
 
-  local _self = self
   stream:on('end', function() 
-    _self:push(nil)
+    self:push(nil)
   end)
 
   stream:on('data', function(chunk)
@@ -845,13 +844,8 @@ function Readable:wrap(stream)
   // important when wrapping filters and duplexes.
   --]]
   for i in pairs(stream) do
-    if ('function' == type(stream[i]) and not self[i]) then
-      function _proxyMethods(method)
-        return function()
-          return stream[method]:apply(stream, arguments)
-        end
-      end
-      self[i] = _proxyMethods(i)
+    if ('function' == type(stream[i]) and self[i] == nil) then
+      self[i] = stream[i]
     end
   end
 
