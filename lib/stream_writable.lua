@@ -19,20 +19,6 @@ function WritableState:initialize(options, stream)
   options = options or {}
 
   --[[
-  // the point at which write() starts returning false
-  // Note: 0 is a valid value, means that we always return false if
-  // the entire buffer is not flushed immediately on write()
-  --]]
-  local hwm = options.highWaterMark
-  local defaultHwm
-  if options.objectMode then
-    defaultHwm = 16
-  else
-    defaultHwm = 16 * 1024
-  end
-  self.highWaterMark = hwm or defaultHwm
-
-  --[[
   // object stream flag to indicate whether or not this stream
   // contains buffers or objects.
   --]]
@@ -41,6 +27,20 @@ function WritableState:initialize(options, stream)
   if core.instanceof(stream, require('./stream_duplex').Duplex) then
     self.objectMode = self.objectMode or not not options.writableObjectMode
   end
+
+  --[[
+  // the point at which write() starts returning false
+  // Note: 0 is a valid value, means that we always return false if
+  // the entire buffer is not flushed immediately on write()
+  --]]
+  local hwm = options.highWaterMark
+  local defaultHwm
+  if self.objectMode then
+    defaultHwm = 16
+  else
+    defaultHwm = 16 * 1024
+  end
+  self.highWaterMark = hwm or defaultHwm
 
   --[[
   // cast to ints.
