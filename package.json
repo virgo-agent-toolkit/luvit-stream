@@ -1,0 +1,23 @@
+{
+  "name": "luvit-stream",
+  "version": "0.1.0",
+  "description": "Streams Library",
+  "main": "init.lua",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgo-agent-toolkit/luvit-stream.git"
+  },
+  "keywords": [
+    "luvit",
+    "stream",
+    "lua"
+  ],
+  "author": "Song Gao <song@gao.io>",
+  "license": "APACHE-2",
+  "bugs": {
+    "url": "https://github.com/virgo-agent-toolkit/luvit-stream/issues"
+  },
+  "homepage": "https://github.com/virgo-agent-toolkit/luvit-stream"
+}
