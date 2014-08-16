@@ -1,5 +1,5 @@
 return {
-  name = "stream",
+  name = "luvit-stream",
   version = "0.1.0",
   description = "stream interface for luvit",
   repository = {
